@@ -7,6 +7,8 @@ from tqdm import tqdm
 import time
 from pyiqa import create_metric
 
+from pyiqa.utils.img_util import imread2tensor
+
 from basicsr.utils import get_root_logger, imwrite, tensor2img
 from basicsr.utils.dist_util import get_dist_info
 from basicsr.utils.registry import MODEL_REGISTRY
@@ -137,7 +139,7 @@ class VideoRecurrentModel(VideoBaseModel):
                     # metric_data['img'] = result
                     if 'gt' in visuals:
                         gt = visuals['gt'][0, idx, :, :, :]
-                        metric_data['img2'] = self.metric_cal_pre(gt)
+                        metric_data['img2'] = gt.unsqueeze(0)
 
                     if save_img:
                         if self.opt['is_train']:
@@ -158,7 +160,9 @@ class VideoRecurrentModel(VideoBaseModel):
                     if with_metrics:
                         for metric_idx, opt_ in enumerate(self.opt['val']['metrics'].values()):
                             iqa_model = create_metric(opt_['type'], metric_mode='FR')
+                            print(metric_data['img'],metric_data['img2'])
                             result = iqa_model(metric_data['img'], metric_data['img2']).cpu().item()
+                            print(result, img_path)
 
                             self.metric_results[folder][idx, metric_idx] += result
 
@@ -184,12 +188,6 @@ class VideoRecurrentModel(VideoBaseModel):
     def test(self):
         n = self.lq.size(1)
         self.net_g.eval()
-
-        # sequence padding
-        seq_padding_size = self.opt['val'].get('seq_padding_size', 2)
-        if seq_padding_size:
-            n_pad = (seq_padding_size - n % seq_padding_size) % seq_padding_size
-            self.lq = torch.cat([self.lq, torch.flip(self.lq[:, -n_pad:, ...], [1])], 1) if n_pad else self.lq
 
         flip_seq = self.opt['val'].get('flip_seq', False)
         self.center_frame_only = self.opt['val'].get('center_frame_only', False)
@@ -251,10 +249,6 @@ class VideoRecurrentModel(VideoBaseModel):
                 self.output = self.net_g(self.lq)
 
             self.output = self.output[:,:,:,:h,:w]
-
-        # crop the padding sequence
-        if seq_padding_size:
-            self.output = self.output[:, :n, :, :, :]
 
         if flip_seq:
             output_1 = self.output[:, :n, :, :, :]

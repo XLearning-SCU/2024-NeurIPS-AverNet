@@ -6,7 +6,17 @@ from torch.nn import functional as F
 
 from basicsr.data.transforms import mod_crop
 from basicsr.utils import img2tensor, scandir
+from pyiqa.utils.img_util import imread2tensor
 
+def read_img_seq_iqa(path):
+    if isinstance(path, list):
+        img_paths = path
+    else:
+        img_paths = sorted(list(scandir(path, full_path=True)))
+    imgs = [imread2tensor(v, rgb=True) for v in img_paths]
+    imgs = torch.stack(imgs, dim=0)
+    
+    return imgs
 
 def read_img_seq(path, require_mod_crop=False, scale=1, return_imgname=False):
     """Read a sequence of images from a given folder path.

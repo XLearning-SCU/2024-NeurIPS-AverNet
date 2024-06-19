@@ -3,9 +3,10 @@ import torch
 from os import path as osp
 from torch.utils import data as data
 
-from basicsr.data.data_util import duf_downsample, generate_frame_indices, read_img_seq
+from basicsr.data.data_util import duf_downsample, generate_frame_indices, read_img_seq, read_img_seq_iqa
 from basicsr.utils import get_root_logger, scandir
 from basicsr.utils.registry import DATASET_REGISTRY
+from pyiqa.utils.img_util import imread2tensor
 
 
 @DATASET_REGISTRY.register()
@@ -91,7 +92,9 @@ class VideoTestDataset(data.Dataset):
             if self.cache_data:
                 logger.info(f'Cache {subfolder_name} for VideoTestDataset...')
                 self.imgs_lq[subfolder_name] = read_img_seq(img_paths_lq)
-                self.imgs_gt[subfolder_name] = read_img_seq(img_paths_gt)
+                # self.imgs_gt[subfolder_name] = read_img_seq(img_paths_gt)
+                self.imgs_gt[subfolder_name] = read_img_seq_iqa(img_paths_gt)
+                print(self.imgs_gt[subfolder_name][0])
             else:
                 self.imgs_lq[subfolder_name] = img_paths_lq
                 self.imgs_gt[subfolder_name] = img_paths_gt
@@ -151,11 +154,7 @@ class VideoRecurrentTestDataset(VideoTestDataset):
         else:
             raise NotImplementedError('Without cache_data is not implemented.')
 
-        t, _, h, w = imgs_lq.shape
-        mod_size = 4
-        imgs_lq = imgs_lq[:, :, :h - h % mod_size, :w - w % mod_size]
-        imgs_gt = imgs_gt[:, :, :h - h % mod_size, :w - w % mod_size]
-
+        print("first GT", imgs_gt[0])
         return {
             'lq': imgs_lq,
             'gt': imgs_gt,

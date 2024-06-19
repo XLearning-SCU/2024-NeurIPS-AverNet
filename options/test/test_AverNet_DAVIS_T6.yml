@@ -8,8 +8,8 @@ datasets:
   test:
     name: DAVIS_AIO_T6_Test
     type: VideoRecurrentTestDataset
-    dataroot_lq: /xlearning/haiyu/datasets/AverNetDataset/DAVIS_AIO_Frame6
-    dataroot_gt: /xlearning/haiyu/datasets/AverNetDataset/DAVIS-test
+    dataroot_lq: /xlearning/haiyu/datasets/videoData/DAVIS_AIO_Frame6
+    dataroot_gt: /xlearning/haiyu/datasets/videoData/DAVIS-GT
 
     cache_data: true
     io_backend:
@@ -34,7 +34,6 @@ path:
 val:
   save_img: true
   suffix: ~  # add suffix to saved images, if None, use exp name
-  seq_padding_size: 0
   patch_testing_size: 0
   overlap_size: 20
 
