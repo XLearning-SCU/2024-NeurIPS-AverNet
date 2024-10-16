@@ -553,22 +553,22 @@ def bivariate_generalized_Gaussian(kernel_size, sig_x, sig_y, theta, beta, grid=
     kernel = kernel / np.sum(kernel)
     return kernel
 
-def generateTransforms(prob):
-    # all_transforms = [AddJPEGCompression([20,30,40])]
-    all_transforms = [AddGaussianNoise(10, 15), AddPoissonNoise(alpha=2, beta=4), AddSpeckleNoise(10, 15),
-                      AddJPEGCompression([20,30,40]), AddVideoCompression(['libx264', 'h264', 'mpeg4']),
-                      AddGaussianBlur([3,5,7]), AddResizingBlur(["area", "bilinear", "bicubic"])]
-    random.shuffle(all_transforms)
-    selected_transforms = [t for t in all_transforms if random.random() > prob]
-    return transforms.Compose(selected_transforms)
+# def generateTransforms(prob):
+#     # all_transforms = [AddJPEGCompression([20,30,40])]
+#     all_transforms = [AddGaussianNoise(10, 15), AddPoissonNoise(alpha=2, beta=4), AddSpeckleNoise(10, 15),
+#                       AddJPEGCompression([20,30,40]), AddVideoCompression(['libx264', 'h264', 'mpeg4']),
+#                       AddGaussianBlur([3,5,7]), AddResizingBlur(["area", "bilinear", "bicubic"])]
+#     random.shuffle(all_transforms)
+#     selected_transforms = [t for t in all_transforms if random.random() > prob]
+#     return transforms.Compose(selected_transforms)
 
-def main(input_folder, output_folder, continuous_frames=6, prob=0.55):
+def generateTransforms(transform_list):
+    return transforms.Compose(transform_list)
 
-    # make output folder
+def main(input_folder, output_folder, num_segments=3):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    # get subfolders in the input folder
     sub_folders = [folder for folder in os.listdir(input_folder) if os.path.isdir(os.path.join(input_folder, folder))]
 
     if len(sub_folders) == 0:
@@ -576,52 +576,68 @@ def main(input_folder, output_folder, continuous_frames=6, prob=0.55):
 
     toTensor = transforms.Compose([transforms.ToTensor()])
 
+    # Define noise transformations with increasing intensity
+    noise_transforms = [
+        (AddGaussianNoise, 'sigma_min', 'sigma_max', 10, 15),  # (transform class, min_attr, max_attr, start, end)
+        (AddPoissonNoise, 'alpha', 'beta', 2, 4),
+        (AddSpeckleNoise, 'sigma_min', 'sigma_max', 10, 15)
+    ]
+
     for folder in sub_folders:
-        if folder == input_folder:
-            input_sub_folder = folder
-            output_sub_folder = output_folder
-        else:
-            input_sub_folder = os.path.join(input_folder, folder)
-            output_sub_folder = os.path.join(output_folder, folder)
+        input_sub_folder = folder if folder == input_folder else os.path.join(input_folder, folder)
+        output_sub_folder = output_folder if folder == input_folder else os.path.join(output_folder, folder)
 
-            # make output subfolder
-            if not os.path.exists(output_sub_folder):
-                os.makedirs(output_sub_folder)
+        if not os.path.exists(output_sub_folder):
+            os.makedirs(output_sub_folder)
 
-        cnt = 0
-        deg_transform = generateTransforms(prob)
+        frame_names = sorted(os.listdir(input_sub_folder))
+        total_frames = len(frame_names)
+        segment_length = max(total_frames // num_segments, 1)
 
-        print(f"Processing {str(input_sub_folder)}")
-        for frame_name in sorted(os.listdir(input_sub_folder)):
-            if cnt == 0:
-                deg_transform = generateTransforms(prob)
+        current_transform_list = []
 
-            input_frame_path = os.path.join(input_sub_folder, frame_name)
+        for segment_idx in range(num_segments):
+            # Determine which noise type and intensity to add
+            noise_idx = segment_idx // (num_segments // len(noise_transforms))
+            if noise_idx >= len(noise_transforms):
+                noise_idx = len(noise_transforms) - 1
 
-            frame = Image.open(input_frame_path)
-            frame = frame.convert('RGB')
-            frame = toTensor(frame)
+            transform_class, min_attr, max_attr, start, end = noise_transforms[noise_idx]
+            intensity = start + (end - start) * ((segment_idx % (num_segments // len(noise_transforms))) / (num_segments // len(noise_transforms)))
+            new_transform = transform_class(**{min_attr: intensity, max_attr: intensity})
 
-            frame = deg_transform(frame)
-            frame = tensor2img(frame)
+            if len(current_transform_list) <= noise_idx:
+                current_transform_list.append(new_transform)
+            else:
+                current_transform_list[noise_idx] = new_transform
 
-            output_frame_path = os.path.join(output_sub_folder, frame_name)
-            cv2.imwrite(output_frame_path, frame)
+            print(current_transform_list)
+            deg_transform = generateTransforms(current_transform_list)
 
-            cnt += 1
-            cnt %= continuous_frames
+            start_frame = segment_idx * segment_length
+            end_frame = (segment_idx + 1) * segment_length if segment_idx < num_segments - 1 else total_frames
 
+            print(f"Processing segment {segment_idx + 1}/{num_segments} with frames {start_frame} to {end_frame - 1}.")
+
+            for cnt in range(start_frame, end_frame):
+                frame_name = frame_names[cnt]
+                input_frame_path = os.path.join(input_sub_folder, frame_name)
+
+                frame = Image.open(input_frame_path)
+                frame = frame.convert('RGB')
+                frame = toTensor(frame)
+
+                frame = deg_transform(frame)
+                frame = tensor2img(frame)
+
+                output_frame_path = os.path.join(output_sub_folder, frame_name)
+                cv2.imwrite(output_frame_path, frame)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Script to add degradations to video sequences.")
+    parser = argparse.ArgumentParser(description="Script to add increasing noise to video sequences.")
     parser.add_argument('--input_dir', required=True, type=str, help='Input directory containing the image sequences.')
     parser.add_argument('--output_dir', required=True, type=str, help='Output directory to save the degraded sequences.')
-    parser.add_argument('--continuous_frames', type=int, default=6, help='Number of continuous frames with the same degradation.')
-    parser.add_argument('--prob', type=float, default=0.55, help='Probability to skip a transformation.')
 
     args = parser.parse_args()
 
-    main(args.input_dir, args.output_dir, args.continuous_frames, args.prob)
-    
-    # /data/haiyu/datasets/videoData/AverNetDataset
-    # /data/haiyu/datasets/videoData/DAVIS-test
+    main(args.input_dir, args.output_dir)

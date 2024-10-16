@@ -553,22 +553,25 @@ def bivariate_generalized_Gaussian(kernel_size, sig_x, sig_y, theta, beta, grid=
     kernel = kernel / np.sum(kernel)
     return kernel
 
-def generateTransforms(prob):
-    # all_transforms = [AddJPEGCompression([20,30,40])]
-    all_transforms = [AddGaussianNoise(10, 15), AddPoissonNoise(alpha=2, beta=4), AddSpeckleNoise(10, 15),
-                      AddJPEGCompression([20,30,40]), AddVideoCompression(['libx264', 'h264', 'mpeg4']),
-                      AddGaussianBlur([3,5,7]), AddResizingBlur(["area", "bilinear", "bicubic"])]
-    random.shuffle(all_transforms)
-    selected_transforms = [t for t in all_transforms if random.random() > prob]
-    return transforms.Compose(selected_transforms)
+# def generateTransforms(prob):
+#     # all_transforms = [AddJPEGCompression([20,30,40])]
+#     all_transforms = [AddGaussianNoise(10, 15), AddPoissonNoise(alpha=2, beta=4), AddSpeckleNoise(10, 15),
+#                       AddJPEGCompression([20,30,40]), AddVideoCompression(['libx264', 'h264', 'mpeg4']),
+#                       AddGaussianBlur([3,5,7]), AddResizingBlur(["area", "bilinear", "bicubic"])]
+#     random.shuffle(all_transforms)
+#     selected_transforms = [t for t in all_transforms if random.random() > prob]
+#     return transforms.Compose(selected_transforms)
 
-def main(input_folder, output_folder, continuous_frames=6, prob=0.55):
+def generateTransforms(transform_list):
+    return transforms.Compose(transform_list)
 
-    # make output folder
+def main(input_folder, output_folder, num_segments=7):
+
+    # 确保输出文件夹存在
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    # get subfolders in the input folder
+    # 获取输入文件夹中的子文件夹
     sub_folders = [folder for folder in os.listdir(input_folder) if os.path.isdir(os.path.join(input_folder, folder))]
 
     if len(sub_folders) == 0:
@@ -576,52 +579,75 @@ def main(input_folder, output_folder, continuous_frames=6, prob=0.55):
 
     toTensor = transforms.Compose([transforms.ToTensor()])
 
+    all_transforms = [
+        AddGaussianNoise(10, 15), 
+        AddPoissonNoise(alpha=2, beta=4), 
+        AddSpeckleNoise(10, 15),
+        AddJPEGCompression([10,20]), 
+        AddVideoCompression(['libx264', 'h264', 'mpeg4']),
+        AddGaussianBlur([7]), 
+        AddResizingBlur(["area", "bilinear", "bicubic"])
+    ]
+
     for folder in sub_folders:
-        if folder == input_folder:
-            input_sub_folder = folder
-            output_sub_folder = output_folder
-        else:
-            input_sub_folder = os.path.join(input_folder, folder)
-            output_sub_folder = os.path.join(output_folder, folder)
+        input_sub_folder = folder if folder == input_folder else os.path.join(input_folder, folder)
+        output_sub_folder = output_folder if folder == input_folder else os.path.join(output_folder, folder)
 
-            # make output subfolder
-            if not os.path.exists(output_sub_folder):
-                os.makedirs(output_sub_folder)
+        # 确保输出子文件夹存在
+        if not os.path.exists(output_sub_folder):
+            os.makedirs(output_sub_folder)
 
-        cnt = 0
-        deg_transform = generateTransforms(prob)
+        # 随机打乱退化效果的顺序
+        random.shuffle(all_transforms)
 
-        print(f"Processing {str(input_sub_folder)}")
-        for frame_name in sorted(os.listdir(input_sub_folder)):
-            if cnt == 0:
-                deg_transform = generateTransforms(prob)
+        # 获取所有帧
+        frame_names = sorted(os.listdir(input_sub_folder))
+        total_frames = len(frame_names)
 
-            input_frame_path = os.path.join(input_sub_folder, frame_name)
+        # 计算每段的帧数
+        segment_length = max(total_frames // num_segments, 1)  # 确保至少有一个帧
 
-            frame = Image.open(input_frame_path)
-            frame = frame.convert('RGB')
-            frame = toTensor(frame)
+        current_transform_list = []
 
-            frame = deg_transform(frame)
-            frame = tensor2img(frame)
+        for segment_idx in range(num_segments):
+            # 添加新的退化变换
+            if segment_idx < len(all_transforms):
+                new_transform = all_transforms[segment_idx]
+                current_transform_list.append(new_transform)
 
-            output_frame_path = os.path.join(output_sub_folder, frame_name)
-            cv2.imwrite(output_frame_path, frame)
+            deg_transform = generateTransforms(current_transform_list)
 
-            cnt += 1
-            cnt %= continuous_frames
+            # 处理当前段的帧
+            start_frame = segment_idx * segment_length
+            end_frame = (segment_idx + 1) * segment_length if segment_idx < num_segments - 1 else total_frames
 
+            print(f"Processing segment {segment_idx + 1}/{num_segments} with frames {start_frame} to {end_frame - 1}.")
+
+            for cnt in range(start_frame, end_frame):
+                frame_name = frame_names[cnt]
+                input_frame_path = os.path.join(input_sub_folder, frame_name)
+
+                frame = Image.open(input_frame_path)
+                frame = frame.convert('RGB')
+                frame = toTensor(frame)
+
+                frame = deg_transform(frame)
+                frame = tensor2img(frame)
+
+                output_frame_path = os.path.join(output_sub_folder, frame_name)
+                cv2.imwrite(output_frame_path, frame)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Script to add degradations to video sequences.")
     parser.add_argument('--input_dir', required=True, type=str, help='Input directory containing the image sequences.')
     parser.add_argument('--output_dir', required=True, type=str, help='Output directory to save the degraded sequences.')
-    parser.add_argument('--continuous_frames', type=int, default=6, help='Number of continuous frames with the same degradation.')
-    parser.add_argument('--prob', type=float, default=0.55, help='Probability to skip a transformation.')
+    # parser.add_argument('--fixed_interval', type=int, default=12, help='Number of continuous frames with the same degradation.')
+    # parser.add_argument('--prob', type=float, default=0.55, help='Probability to skip a transformation.')
+    # parser.add_argument('--variation', type=int, default=6, help='Range for the variability of continuous frames.')
 
     args = parser.parse_args()
 
-    main(args.input_dir, args.output_dir, args.continuous_frames, args.prob)
+    main(args.input_dir, args.output_dir)
     
     # /data/haiyu/datasets/videoData/AverNetDataset
     # /data/haiyu/datasets/videoData/DAVIS-test

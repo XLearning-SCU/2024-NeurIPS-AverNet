@@ -1,4 +1,4 @@
-name: AverNet_DAVIS_BlurCompression
+name: AverNet_DAVIS_TrainSetG1
 model_type: VideoRecurrentModel
 scale: 1
 num_gpu: 1  # set num_gpu: 0 for cpu mode
@@ -6,10 +6,10 @@ manual_seed: 0
 
 datasets:
   test:
-    name: DAVIS_AIO_BlurCompression
+    name: DAVIS_AIO_G1
     type: VideoRecurrentTestDataset
-    dataroot_lq: /data/haiyu/datasets/videoData/Tab2CombinedDeg/DAVIS_AIO_Frame12_BlurCompression
-    dataroot_gt: /data/haiyu/datasets/videoData/DAVIS-test
+    dataroot_lq: /data/haiyu/datasets/videoData/AverNetDataset/DAVIS_LQ_group1
+    dataroot_gt: /data/haiyu/datasets/videoData/AverNetDataset/DAVIS_group1
 
     cache_data: true
     io_backend:
@@ -34,8 +34,7 @@ path:
 val:
   save_img: true
   suffix: ~  # add suffix to saved images, if None, use exp name
-  seq_padding_size: 0
-  patch_testing_size: 0
+  patch_testing_size: 256
   overlap_size: 20
 
   metrics:

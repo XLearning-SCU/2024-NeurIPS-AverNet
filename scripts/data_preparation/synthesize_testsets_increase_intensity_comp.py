@@ -89,7 +89,7 @@ class AddVideoCompression(object):
         vcodec = random.choice(self.vcodec)
         if img.shape[-1] % 2 !=0 or img.shape[-2] % 2 !=0:
             while vcodec == 'libx264' or vcodec == 'h264':
-                vcodec = random.choice(self.vcodec)
+                vcodec = 'mpeg4'
 
         print(img.shape, vcodec)
         random_seed_suffix = random.randint(0, 100)
@@ -553,22 +553,22 @@ def bivariate_generalized_Gaussian(kernel_size, sig_x, sig_y, theta, beta, grid=
     kernel = kernel / np.sum(kernel)
     return kernel
 
-def generateTransforms(prob):
-    # all_transforms = [AddJPEGCompression([20,30,40])]
-    all_transforms = [AddGaussianNoise(10, 15), AddPoissonNoise(alpha=2, beta=4), AddSpeckleNoise(10, 15),
-                      AddJPEGCompression([20,30,40]), AddVideoCompression(['libx264', 'h264', 'mpeg4']),
-                      AddGaussianBlur([3,5,7]), AddResizingBlur(["area", "bilinear", "bicubic"])]
-    random.shuffle(all_transforms)
-    selected_transforms = [t for t in all_transforms if random.random() > prob]
-    return transforms.Compose(selected_transforms)
+# def generateTransforms(prob):
+#     # all_transforms = [AddJPEGCompression([20,30,40])]
+#     all_transforms = [AddGaussianNoise(10, 15), AddPoissonNoise(alpha=2, beta=4), AddSpeckleNoise(10, 15),
+#                       AddJPEGCompression([20,30,40]), AddVideoCompression(['libx264', 'h264', 'mpeg4']),
+#                       AddGaussianBlur([3,5,7]), AddResizingBlur(["area", "bilinear", "bicubic"])]
+#     random.shuffle(all_transforms)
+#     selected_transforms = [t for t in all_transforms if random.random() > prob]
+#     return transforms.Compose(selected_transforms)
 
-def main(input_folder, output_folder, continuous_frames=6, prob=0.55):
+def generateTransforms(transform_list):
+    return transforms.Compose(transform_list)
 
-    # make output folder
+def main(input_folder, output_folder, num_segments=6):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    # get subfolders in the input folder
     sub_folders = [folder for folder in os.listdir(input_folder) if os.path.isdir(os.path.join(input_folder, folder))]
 
     if len(sub_folders) == 0:
@@ -576,52 +576,62 @@ def main(input_folder, output_folder, continuous_frames=6, prob=0.55):
 
     toTensor = transforms.Compose([transforms.ToTensor()])
 
+    # Define compression transformations with increasing intensity
+    jpeg_compression_levels = [30, 20, 10]
+    video_codecs = ['libx264', 'h264', 'mpeg4']
+    
+    num_compression_levels = len(jpeg_compression_levels)
+    segments_per_level = num_segments // num_compression_levels
+
     for folder in sub_folders:
-        if folder == input_folder:
-            input_sub_folder = folder
-            output_sub_folder = output_folder
-        else:
-            input_sub_folder = os.path.join(input_folder, folder)
-            output_sub_folder = os.path.join(output_folder, folder)
+        input_sub_folder = folder if folder == input_folder else os.path.join(input_folder, folder)
+        output_sub_folder = output_folder if folder == input_folder else os.path.join(output_folder, folder)
 
-            # make output subfolder
-            if not os.path.exists(output_sub_folder):
-                os.makedirs(output_sub_folder)
+        if not os.path.exists(output_sub_folder):
+            os.makedirs(output_sub_folder)
 
-        cnt = 0
-        deg_transform = generateTransforms(prob)
+        frame_names = sorted(os.listdir(input_sub_folder))
+        total_frames = len(frame_names)
+        segment_length = total_frames / num_segments
 
-        print(f"Processing {str(input_sub_folder)}")
-        for frame_name in sorted(os.listdir(input_sub_folder)):
-            if cnt == 0:
-                deg_transform = generateTransforms(prob)
+        current_transform_list = []
 
-            input_frame_path = os.path.join(input_sub_folder, frame_name)
+        for level_idx in range(num_compression_levels):
+            compression_level = jpeg_compression_levels[level_idx]
 
-            frame = Image.open(input_frame_path)
-            frame = frame.convert('RGB')
-            frame = toTensor(frame)
+            start_segment = level_idx * segments_per_level
+            end_segment = (level_idx + 1) * segments_per_level if level_idx < num_compression_levels - 1 else num_segments
 
-            frame = deg_transform(frame)
-            frame = tensor2img(frame)
+            for segment_idx in range(start_segment, end_segment):
+                current_transform_list.append(AddJPEGCompression([compression_level]))
+                current_transform_list.append(AddVideoCompression([random.choice(video_codecs)]))
 
-            output_frame_path = os.path.join(output_sub_folder, frame_name)
-            cv2.imwrite(output_frame_path, frame)
+                deg_transform = generateTransforms(current_transform_list)
 
-            cnt += 1
-            cnt %= continuous_frames
+                start_frame = int(segment_idx * segment_length)
+                end_frame = int((segment_idx + 1) * segment_length) if segment_idx < num_segments - 1 else total_frames
 
+                print(f"Processing segment {segment_idx + 1}/{num_segments} with frames {start_frame} to {end_frame - 1}.")
+
+                for cnt in range(start_frame, end_frame):
+                    frame_name = frame_names[cnt]
+                    input_frame_path = os.path.join(input_sub_folder, frame_name)
+
+                    frame = Image.open(input_frame_path)
+                    frame = frame.convert('RGB')
+                    frame = toTensor(frame)
+
+                    frame = deg_transform(frame)
+                    frame = tensor2img(frame)
+
+                    output_frame_path = os.path.join(output_sub_folder, frame_name)
+                    cv2.imwrite(output_frame_path, frame)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Script to add degradations to video sequences.")
     parser.add_argument('--input_dir', required=True, type=str, help='Input directory containing the image sequences.')
     parser.add_argument('--output_dir', required=True, type=str, help='Output directory to save the degraded sequences.')
-    parser.add_argument('--continuous_frames', type=int, default=6, help='Number of continuous frames with the same degradation.')
-    parser.add_argument('--prob', type=float, default=0.55, help='Probability to skip a transformation.')
 
     args = parser.parse_args()
 
-    main(args.input_dir, args.output_dir, args.continuous_frames, args.prob)
-    
-    # /data/haiyu/datasets/videoData/AverNetDataset
-    # /data/haiyu/datasets/videoData/DAVIS-test
+    main(args.input_dir, args.output_dir)

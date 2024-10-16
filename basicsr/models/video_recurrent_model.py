@@ -160,9 +160,7 @@ class VideoRecurrentModel(VideoBaseModel):
                     if with_metrics:
                         for metric_idx, opt_ in enumerate(self.opt['val']['metrics'].values()):
                             iqa_model = create_metric(opt_['type'], metric_mode='FR')
-                            print(metric_data['img'],metric_data['img2'])
                             result = iqa_model(metric_data['img'], metric_data['img2']).cpu().item()
-                            print(result, img_path)
 
                             self.metric_results[folder][idx, metric_idx] += result
 

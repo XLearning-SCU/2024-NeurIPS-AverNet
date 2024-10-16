@@ -554,7 +554,6 @@ def bivariate_generalized_Gaussian(kernel_size, sig_x, sig_y, theta, beta, grid=
     return kernel
 
 def generateTransforms(prob):
-    # all_transforms = [AddJPEGCompression([20,30,40])]
     all_transforms = [AddGaussianNoise(10, 15), AddPoissonNoise(alpha=2, beta=4), AddSpeckleNoise(10, 15),
                       AddJPEGCompression([20,30,40]), AddVideoCompression(['libx264', 'h264', 'mpeg4']),
                       AddGaussianBlur([3,5,7]), AddResizingBlur(["area", "bilinear", "bicubic"])]
@@ -562,7 +561,7 @@ def generateTransforms(prob):
     selected_transforms = [t for t in all_transforms if random.random() > prob]
     return transforms.Compose(selected_transforms)
 
-def main(input_folder, output_folder, continuous_frames=6, prob=0.55):
+def main(input_folder, output_folder, fixed_interval=6, prob=0.55, variation=3):
 
     # make output folder
     if not os.path.exists(output_folder):
@@ -591,10 +590,14 @@ def main(input_folder, output_folder, continuous_frames=6, prob=0.55):
         cnt = 0
         deg_transform = generateTransforms(prob)
 
+        tmp_interval = fixed_interval
         print(f"Processing {str(input_sub_folder)}")
         for frame_name in sorted(os.listdir(input_sub_folder)):
             if cnt == 0:
                 deg_transform = generateTransforms(prob)
+                tmp_interval = random.randint(fixed_interval - variation, fixed_interval + variation)
+                assert tmp_interval > 0, "The interval of degradation changes must be positive."
+                print(f"Temporal Interval: {str(tmp_interval)}.")
 
             input_frame_path = os.path.join(input_sub_folder, frame_name)
 
@@ -609,19 +612,20 @@ def main(input_folder, output_folder, continuous_frames=6, prob=0.55):
             cv2.imwrite(output_frame_path, frame)
 
             cnt += 1
-            cnt %= continuous_frames
+            cnt %= tmp_interval
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Script to add degradations to video sequences.")
     parser.add_argument('--input_dir', required=True, type=str, help='Input directory containing the image sequences.')
     parser.add_argument('--output_dir', required=True, type=str, help='Output directory to save the degraded sequences.')
-    parser.add_argument('--continuous_frames', type=int, default=6, help='Number of continuous frames with the same degradation.')
+    parser.add_argument('--fixed_interval', type=int, default=12, help='Number of continuous frames with the same degradation.')
     parser.add_argument('--prob', type=float, default=0.55, help='Probability to skip a transformation.')
+    parser.add_argument('--variation', type=int, default=6, help='Range for the variability of continuous frames.')
 
     args = parser.parse_args()
 
-    main(args.input_dir, args.output_dir, args.continuous_frames, args.prob)
+    main(args.input_dir, args.output_dir, args.fixed_interval, args.prob, args.variation)
     
     # /data/haiyu/datasets/videoData/AverNetDataset
     # /data/haiyu/datasets/videoData/DAVIS-test

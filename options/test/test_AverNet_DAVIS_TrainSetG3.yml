@@ -1,4 +1,4 @@
-name: AverNet_DAVIS_T12_OLD
+name: AverNet_DAVIS_TrainSetG3
 model_type: VideoRecurrentModel
 scale: 1
 num_gpu: 1  # set num_gpu: 0 for cpu mode
@@ -6,10 +6,10 @@ manual_seed: 0
 
 datasets:
   test:
-    name: DAVIS_AIO_T12_Test
+    name: DAVIS_AIO_G3
     type: VideoRecurrentTestDataset
-    dataroot_lq: /xlearning/haiyu/datasets/AverNetDataset/DAVIS_AIO_Frame12
-    dataroot_gt: /xlearning/haiyu/datasets/AverNetDataset/DAVIS-test
+    dataroot_lq: /data/haiyu/datasets/videoData/AverNetDataset/DAVIS_LQ_group3
+    dataroot_gt: /data/haiyu/datasets/videoData/AverNetDataset/DAVIS_group3
 
     cache_data: true
     io_backend:
@@ -19,7 +19,7 @@ datasets:
 
 # network structures
 network_g:
-  type: AverNet_OLD
+  type: AverNet
   mid_channels: 96
   prompt_dim: 96
   num_blocks: 7
@@ -27,15 +27,14 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: /xlearning/haiyu/workspace/aioVR/Ark/experiments/AverNet_v4_96cConvRefine_postProp/models/net_g_600000.pth # /xlearning/haiyu/workspace/AverNet/AverNet/experiments/pretrained_models/AverNet.pth
+  pretrain_network_g: experiments/pretrained_models/AverNet.pth # /xlearning/haiyu/workspace/AverNet/AverNet/experiments/pretrained_models/AverNet.pth
   strict_load_g: true
 
 # validation settings
 val:
   save_img: true
   suffix: ~  # add suffix to saved images, if None, use exp name
-  seq_padding_size: 0
-  patch_testing_size: 0
+  patch_testing_size: 256
   overlap_size: 20
 
   metrics:

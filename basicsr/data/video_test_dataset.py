@@ -92,9 +92,7 @@ class VideoTestDataset(data.Dataset):
             if self.cache_data:
                 logger.info(f'Cache {subfolder_name} for VideoTestDataset...')
                 self.imgs_lq[subfolder_name] = read_img_seq(img_paths_lq)
-                # self.imgs_gt[subfolder_name] = read_img_seq(img_paths_gt)
-                self.imgs_gt[subfolder_name] = read_img_seq_iqa(img_paths_gt)
-                print(self.imgs_gt[subfolder_name][0])
+                self.imgs_gt[subfolder_name] = read_img_seq(img_paths_gt)
             else:
                 self.imgs_lq[subfolder_name] = img_paths_lq
                 self.imgs_gt[subfolder_name] = img_paths_gt
@@ -154,7 +152,6 @@ class VideoRecurrentTestDataset(VideoTestDataset):
         else:
             raise NotImplementedError('Without cache_data is not implemented.')
 
-        print("first GT", imgs_gt[0])
         return {
             'lq': imgs_lq,
             'gt': imgs_gt,
