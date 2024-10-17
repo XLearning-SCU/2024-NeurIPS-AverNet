@@ -8,8 +8,8 @@ datasets:
   test:
     name: DAVIS_AIO_T24_Test
     type: VideoRecurrentTestDataset
-    dataroot_lq: /data/haiyu/datasets/videoData/DAVIS_AIO_Frame24
-    dataroot_gt: /data/haiyu/datasets/videoData/DAVIS-test
+    dataroot_lq: /xlearning/haiyu/datasets/videoData/AverNetDATASET/DAVIS_AIO_Frame24
+    dataroot_gt: /xlearning/haiyu/datasets/videoData/DAVIS-GT
 
     cache_data: true
     io_backend:
@@ -27,13 +27,14 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: experiments/pretrained_models/AverNet.pth # /xlearning/haiyu/workspace/AverNet/AverNet/experiments/pretrained_models/AverNet.pth
+  pretrain_network_g: experiments/pretrained_models/AverNet_final.pth # /xlearning/haiyu/workspace/AverNet/AverNet/experiments/pretrained_models/AverNet.pth
   strict_load_g: true
 
 # validation settings
 val:
   save_img: true
   suffix: ~  # add suffix to saved images, if None, use exp name
+  seq_padding_size: 0
   patch_testing_size: 0
   overlap_size: 20
 

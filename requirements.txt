@@ -1,5 +1,6 @@
-av
 addict
+av
+thop
 future
 lmdb
 numpy>=1.17
@@ -9,7 +10,7 @@ pyyaml
 requests
 scikit-image
 scipy
-# tb-nightly
+tb-nightly
 torch>=1.7
 torchvision
 tqdm

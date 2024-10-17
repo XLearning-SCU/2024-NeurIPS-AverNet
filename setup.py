@@ -145,15 +145,15 @@ if __name__ == '__main__':
 
     write_version_py()
     setup(
-        name='avernet',
+        name='basicsr',
         version=get_version(),
-        description='All-in-one Video Restoration for Time-varying Unknown Degradations',
-        long_description="AverNet",
+        description='AverNet',
+        long_description="All-in-one Video Restoration for Time-varying Unknown Degradations",
         # long_description_content_type='text/markdown',
         author='Haiyu Zhao',
         author_email='haiyuzhao.gm@gmail.com',
         keywords='computer vision, video restoration, all-in-one',
-        url='https://github.com/xinntao/BasicSR',
+        url='',
         include_package_data=True,
         packages=find_packages(exclude=('options', 'datasets', 'experiments', 'results', 'tb_logger', 'wandb')),
         classifiers=[

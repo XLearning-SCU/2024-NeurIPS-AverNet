@@ -8,8 +8,8 @@ datasets:
   test_0:
     name: Set8_AIO_T24_Test
     type: VideoRecurrentTestDataset
-    dataroot_lq: /data/haiyu/datasets/videoData/Set8_AIO_Frame24
-    dataroot_gt: /data/haiyu/datasets/videoData/Set8
+    dataroot_lq: /xlearning/haiyu/datasets/videoData/AverNetDATASET/Set8_AIO_Frame24
+    dataroot_gt: /xlearning/haiyu/datasets/videoData/AverNetDATASET/Set8-GT
 
     cache_data: true
     io_backend:
@@ -29,13 +29,14 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: experiments/pretrained_models/AverNet.pth # /xlearning/haiyu/workspace/AverNet/AverNet/experiments/pretrained_models/AverNet.pth
+  pretrain_network_g: experiments/pretrained_models/AverNet_final.pth # /xlearning/haiyu/workspace/AverNet/AverNet/experiments/pretrained_models/AverNet.pth
   strict_load_g: true
 
 # validation settings
 val:
   save_img: true
   suffix: ~  # add suffix to saved images, if None, use exp name
+  seq_padding_size: 0
   patch_testing_size: 512
   overlap_size: 20
 

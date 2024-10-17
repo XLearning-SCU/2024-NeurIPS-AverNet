@@ -11,7 +11,8 @@ datasets:
     name: DAVISTrainingDataset
     type: TUDVideoDataset
     scale: 1
-    dataroot_gt: datasets/DAVIS
+    dataroot_lq: datasets/DAVIS_LQ # The dataroot of LQ frames
+    dataroot_gt: datasets/DAVIS # The dataroot of GT frames
     meta_info_file: basicsr/data/meta_info/DAVIS_meta_info.txt
     io_backend:
       type: disk

@@ -299,9 +299,8 @@ class AverNet(nn.Module):
                     # Prompt-guided Alignment
                     if i > 0:
                         cond = torch.cat([feat_prop, x_i], dim=1)
-                        # alignment / need mod
                         feat_prop = self.deform_align[module](pre_feat, cond, flow)
-
+                        
                     # Prompt-conditioned Enhancement
                     if idx in keyframe_idx:
                         if self.cpu_cache:
