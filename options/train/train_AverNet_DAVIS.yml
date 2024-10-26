@@ -2,7 +2,7 @@
 name: AverNet_DAVIS
 model_type: VideoRecurrentModel
 scale: 1
-num_gpu: 1
+num_gpu: 2
 manual_seed: 0
 
 # dataset and data loader settings
@@ -13,7 +13,7 @@ datasets:
     scale: 1
     dataroot_lq: datasets/DAVIS_LQ # The dataroot of LQ frames
     dataroot_gt: datasets/DAVIS # The dataroot of GT frames
-    meta_info_file: basicsr/data/meta_info/DAVIS_meta_info.txt
+    meta_info_file: basicsr/data/meta_info/DAVIS_meta_info.txt # The path of video meta information
     io_backend:
       type: disk
 
@@ -26,8 +26,6 @@ datasets:
     use_hflip: true
     use_rot: true
     test_mode: false
-    prob: 0.55
-    deg_interval: 6
 
     # data loader
     num_worker_per_gpu: 4

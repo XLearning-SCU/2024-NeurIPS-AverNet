@@ -10,7 +10,6 @@ from datetime import datetime
 from PIL import Image
 from torchvision import transforms
 from torch.nn import functional as F
-# from .utils import generateTransforms
 
 
 def tensor2img(tensor):
@@ -39,10 +38,8 @@ class AddPoissonNoise(object):
         self.beta = beta
 
     def __call__(self, img):
-        alpha = 2.0
-        # alpha = random.uniform(self.alpha, self.beta)
+        alpha = random.uniform(self.alpha, self.beta)
         p = 10 ** alpha
-        # img = torch.clamp(img, 0.0, 1.0)
         img = np.random.poisson(img * p) / p
         toTensor = transforms.Compose([transforms.ToTensor()])
         img = toTensor(img).permute(1, 2, 0)
@@ -52,7 +49,7 @@ class AddPoissonNoise(object):
 
 # adding speckle noise
 class AddSpeckleNoise(object):
-    def __init__(self, sigma_min, sigma_max): # 15.0
+    def __init__(self, sigma_min, sigma_max):
         self.sigma_min = sigma_min
         self.sigma_max = sigma_max
 
@@ -68,7 +65,7 @@ class AddSpeckleNoise(object):
 # adding JPEG compression blocking
 class AddJPEGCompression(object):
     def __init__(self, comp_level):
-        self.comp_level = comp_level # 10-40
+        self.comp_level = comp_level
 
     def __call__(self, img):
         p = random.choice(self.comp_level)
@@ -88,10 +85,8 @@ class AddVideoCompression(object):
     def __call__(self, img):
         vcodec = random.choice(self.vcodec)
         if img.shape[-1] % 2 !=0 or img.shape[-2] % 2 !=0:
-            while vcodec == 'libx264' or vcodec == 'h264':
-                vcodec = random.choice(self.vcodec)
+            vcodec = 'mpeg4'
 
-        print(img.shape, vcodec)
         random_seed_suffix = random.randint(0, 100)
 
         base_root = "./"
@@ -570,7 +565,7 @@ def main(input_folder, output_folder, continuous_frames=6, prob=0.55):
     # get subfolders in the input folder
     sub_folders = [folder for folder in os.listdir(input_folder) if os.path.isdir(os.path.join(input_folder, folder))]
 
-    continuous_frames = 6 # 最少连续帧数
+    continuous_frames = 6 # min number of consecutive frames
 
     if len(sub_folders) == 0:
         sub_folders = [input_folder]

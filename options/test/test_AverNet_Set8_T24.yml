@@ -8,8 +8,8 @@ datasets:
   test_0:
     name: Set8_AIO_T24_Test
     type: VideoRecurrentTestDataset
-    dataroot_lq: /xlearning/haiyu/datasets/videoData/AverNetDATASET/Set8_AIO_Frame24
-    dataroot_gt: /xlearning/haiyu/datasets/videoData/AverNetDATASET/Set8-GT
+    dataroot_lq: datasets/Set8_t24
+    dataroot_gt: datasets/Set8-GT
 
     cache_data: true
     io_backend:

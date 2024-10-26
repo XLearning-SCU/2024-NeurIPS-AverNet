@@ -10,6 +10,17 @@ from basicsr.data.transforms import paired_random_crop, augment
 from basicsr.utils import FileClient, imfrombytes, img2tensor
 from basicsr.utils.registry import DATASET_REGISTRY
 
+def read_img(path):
+    # read image by cv2
+    # return: Numpy float32, HWC, BGR, [0,1]
+    img = cv2.imread(path, cv2.IMREAD_UNCHANGED)  # cv2.IMREAD_GRAYSCALE
+    img = img.astype(np.float32) / 255.
+    if img.ndim == 2:
+        img = np.expand_dims(img, axis=2)
+    # some images have 4 channels
+    if img.shape[2] > 3:
+        img = img[:, :, :3]
+    return img
 
 @DATASET_REGISTRY.register()
 class TUDVideoDataset(data.Dataset):
@@ -35,20 +46,21 @@ class TUDVideoDataset(data.Dataset):
             scale (bool): Scale, which will be added automatically.
     """
 
-    def __init__(self, dataroot_lq, dataroot_gt, meta_info_file, num_frame, filename_tmpl, filename_ext, scale=1, gt_size=256):
+    def __init__(self, opt):
         super(TUDVideoDataset, self).__init__()
-        self.scale = scale
-        self.gt_size = gt_size
-        self.gt_root, self.lq_root = Path(dataroot_gt), Path(dataroot_lq)
-        self.num_frame = num_frame
-        self.filename_tmpl = filename_tmpl
-        self.filename_ext = filename_ext
+        self.opt = opt
+        self.scale = opt['scale']
+        self.gt_size = opt['gt_size']
+        self.gt_root, self.lq_root = Path(opt['dataroot_gt']), Path(opt['dataroot_lq'])
+        self.num_frame = opt['num_frame']
+        self.filename_tmpl = opt['filename_tmpl']
+        self.filename_ext = opt['filename_ext']
         
 
         keys = []
         total_num_frames = [] # some clips may not have 100 frames
         start_frames = [] # some clips may not start from 00000
-        with open(meta_info_file, 'r') as fin:
+        with open(opt['meta_info_file'], 'r') as fin:
             for line in fin:
                 folder, frame_num, _, start_frame = line.split(' ')
                 keys.extend([f'{folder}/{i:{self.filename_tmpl}}' for i in range(int(start_frame), int(start_frame)+int(frame_num))])

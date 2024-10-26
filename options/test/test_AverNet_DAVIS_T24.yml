@@ -8,8 +8,8 @@ datasets:
   test:
     name: DAVIS_AIO_T24_Test
     type: VideoRecurrentTestDataset
-    dataroot_lq: /xlearning/haiyu/datasets/videoData/AverNetDATASET/DAVIS_AIO_Frame24
-    dataroot_gt: /xlearning/haiyu/datasets/videoData/DAVIS-GT
+    dataroot_lq: datasets/DAVIS_t24 # The root of lq frames
+    dataroot_gt: datasets/DAVIS-GT # The root of GT frames
 
     cache_data: true
     io_backend:
@@ -27,7 +27,7 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: experiments/pretrained_models/AverNet_final.pth # /xlearning/haiyu/workspace/AverNet/AverNet/experiments/pretrained_models/AverNet.pth
+  pretrain_network_g: experiments/pretrained_models/AverNet_final.pth
   strict_load_g: true
 
 # validation settings

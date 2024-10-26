@@ -8,8 +8,8 @@ datasets:
   test:
     name: DAVIS_AIO_T6_Test
     type: VideoRecurrentTestDataset
-    dataroot_lq: datasets/videoData/AverNetDATASET/DAVIS_AIO_Frame6 # The root of lq frames
-    dataroot_gt: datasets/videoData/DAVIS-GT # The root of GT frames
+    dataroot_lq: datasets/DAVIS_t6 # The root of lq frames
+    dataroot_gt: datasets/DAVIS-GT # The root of GT frames
 
     cache_data: true
     io_backend:

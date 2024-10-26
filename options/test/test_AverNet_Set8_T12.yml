@@ -8,8 +8,8 @@ datasets:
   test_0:
     name: Set8_AIO_T12_Test
     type: VideoRecurrentTestDataset
-    dataroot_lq: /xlearning/haiyu/datasets/videoData/AverNetDATASET/Set8_AIO_Frame12
-    dataroot_gt: /xlearning/haiyu/datasets/videoData/AverNetDATASET/Set8-GT
+    dataroot_lq: datasets/Set8_t12
+    dataroot_gt: datasets/Set8-GT
 
     cache_data: true
     io_backend:
@@ -29,7 +29,7 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: experiments/pretrained_models/AverNet_final.pth # /xlearning/haiyu/workspace/AverNet/AverNet/experiments/pretrained_models/AverNet.pth
+  pretrain_network_g: experiments/pretrained_models/AverNet_final.pth
   strict_load_g: true
 
 # validation settings

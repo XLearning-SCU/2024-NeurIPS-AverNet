@@ -5,18 +5,18 @@ Haiyu Zhao, Lei Tian, Xinyan Xiao, Peng Hu, Yuanbiao Gou, Xi Peng
 
 ## Installation
 
-1. `git clone https://github.com/Pandint/AverNet.git`
+1. `git clone https://github.com/XLearning-SCU/2024-NeurIPS-AverNet.git ./AverNet`
 2. `cd AverNet`
 3. `pip install -r requirement.txt`
 4. `pip install -U openmim` (install mmcv) [deformable convolution dependency]
-5. `mim install "mmcv>=2.0.0rc1"`
+5. `mim install mmcv`
 6. `python setup.py develop`
 
 ## Dataset Preparation
 
 ### Training Data
 
-1. Download the DAVIS dataset from [official webset](https://davischallenge.org/davis2016/code.html) or [Google Drive]().
+1. Download the DAVIS dataset from [official webset](https://davischallenge.org/davis2016/code.html) or [Google Drive](https://drive.google.com/drive/folders/1NIV4YSMhBJfjQu2SNQgvuluTAZDeFXH6?usp=sharing).
 2. Synthesize the low-quality (LQ) videos through `scripts/data_preparation/synthesize_datasets.py`.
 ```
 python scripts/data_preparation/synthesize_datasets.py --input_dir 'The root of DAVIS' --output_dir 'LQ roots' --continuous_frames 6
@@ -30,7 +30,7 @@ python scripts/data_preparation/generate_meta_info.py --dataset_path 'The root o
 
 ### Testing Data
 
-The test sets can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1NIV4YSMhBJfjQu2SNQgvuluTAZDeFXH6?usp=sharing). 
+The test sets can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1NIV4YSMhBJfjQu2SNQgvuluTAZDeFXH6?usp=sharing) or you can synthesize them through `synthesize_datasets.py`.
 
 ## Testing
 
@@ -50,6 +50,13 @@ Note that the `dataroot_lq` and `dataroot_gt` in the yaml file should be modifie
 python basicsr/train.py -opt options/train/train_AverNet_DAVIS.yml
 ```
 Note that the `dataroot_lq` and `dataroot_gt` in the yaml file should be modified to LQ and GT folders of training datasets, respectively.
+
+Multiple GPU training:
+Modify the option yaml file `num_gpu` and run:
+```
+python -m torch.distributed.launch --nproc_per_node='number of gpus' basicsr/train.py -opt options/train/train_AverNet_DAVIS.yml --launcher pytorch
+```
+
 
 ## Acknowledgements
 The codes are based on [BasicSR](https://github.com/XPixelGroup/BasicSR). Thanks the authors for their codes!

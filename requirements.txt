@@ -1,5 +1,5 @@
 addict
-av
+av==12.1.0
 thop
 future
 lmdb
@@ -11,7 +11,7 @@ requests
 scikit-image
 scipy
 tb-nightly
-torch>=1.7
+torch==2.3.1
 torchvision
 tqdm
 yapf
