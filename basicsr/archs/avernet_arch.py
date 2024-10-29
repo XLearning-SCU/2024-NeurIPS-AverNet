@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -33,9 +32,8 @@ class PromptGenerationInteraction(nn.Module):
 
     def forward(self, x):
         b, c, h, w = x.shape
-        emb = x.mean(dim=(-2, -1)) # (b, t, c) -> (b*t, c)
-        prompt_weights = F.softmax(self.linear_proj(emb), dim=1) # channel dim softmax (b, prompt_len)
-        # (b, prompt_len, 1, 1, 1) * (b, prompt_len, prompt_dim, prompt_size, prompt_size)
+        emb = x.mean(dim=(-2, -1)) 
+        prompt_weights = F.softmax(self.linear_proj(emb), dim=1) 
 
         input_conditioned_prompt = prompt_weights.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1) * self.prompt_param.unsqueeze(0).repeat(b, 1, 1, 1, 1)
         input_conditioned_prompt = torch.sum(input_conditioned_prompt, dim=1)
@@ -80,10 +78,6 @@ class AverNet(nn.Module):
         self.PGI_prop = PromptGenerationInteraction(embed_dim=mid_channels, prompt_dim=self.prompt_dim,
                                                     prompt_size=self.prompt_size, num_blocks=3)
 
-
-        # self.key_extract = PromptGenBlock(emb_dim=mid_channels, prompt_size=self.prompt_size, prompt_dim=self.prompt_dim)
-        # self.key_proj = ResidualBlocksWithInputConv(mid_channels + self.prompt_dim, mid_channels, 3)
-
         self.key_fusion = nn.Conv2d(2 * self.mid_channels, self.mid_channels, 3, 1, 1, bias=True)
 
         # key frame
@@ -127,10 +121,6 @@ class AverNet(nn.Module):
                 x_i = x[i]
 
             feats_keyframe[i] = self.PGI_prop(x_i)
-
-            # feats_keyframe[i] = self.key_extract(x_i)
-            # feats_keyframe[i] = torch.cat([feats_keyframe[i], x_i], dim=1)
-            # feats_keyframe[i] = self.key_proj(feats_keyframe[i])
 
             if self.cpu_cache:
                 feats_keyframe[i] = feats_keyframe[i].cpu()
@@ -365,9 +355,6 @@ class PromptGuidedAlignment(ModulatedDeformConv2d):
         self.PGI_align = PromptGenerationInteraction(embed_dim=self.out_channels, prompt_dim=self.prompt_dim,
                                                      num_blocks=1, align=True)
 
-        # self.prompt_extract = PromptGenBlock(emb_dim=self.out_channels, prompt_dim=self.prompt_dim)
-        # self.proj_2 = ResidualBlocksWithInputConv(self.out_channels + self.prompt_dim, self.out_channels, 1)
-
         self.fusion = nn.Conv2d(3 * self.out_channels, 2 * self.out_channels, 3, 1, 1, bias=True)
 
         self.conv_offset = nn.Sequential(
@@ -392,10 +379,6 @@ class PromptGuidedAlignment(ModulatedDeformConv2d):
 
         integrated_features = self.PGI_align(proj_cond)
         cond = self.fusion(torch.cat([integrated_features, cond], dim=1))
-
-        # prompt = self.prompt_extract(proj_cond)
-        # prompt_guide_cond = self.proj_2(torch.cat([proj_cond, prompt], dim=1))
-        # cond = self.fusion(torch.cat([prompt_guide_cond, cond], dim=1))
 
         cond = torch.cat([cond, flow], dim=1) # guide
         out = self.conv_offset(cond)
