@@ -128,18 +128,6 @@ class AverNet(nn.Module):
         return feats_keyframe
 
     def compute_flow(self, lqs):
-        """Compute optical flow using SPyNet for feature alignment.
-
-        Args:
-            lqs (tensor): Input low quality (LQ) sequence with
-                shape (n, t, c, h, w).
-
-        Return:
-            tuple(Tensor): Optical flow. 'flows_forward' corresponds to the
-                flows used for forward-time propagation (current to previous).
-                'flows_backward' corresponds to the flows used for
-                backward-time propagation (current to next).
-        """
 
         n, t, c, h, w = lqs.size()
         lqs_1 = lqs[:, :-1, :, :, :].reshape(-1, c, h, w)
@@ -156,17 +144,6 @@ class AverNet(nn.Module):
         return flows_forward, flows_backward
 
     def upsample(self, lqs, feats):
-        """Compute the output image given the features.
-
-        Args:
-            lqs (tensor): Input low quality (LQ) sequence with
-                shape (n, t, c, h, w).
-            feats (dict): The features from the propagation branches.
-
-        Returns:
-            Tensor: Output HR sequence with shape (n, t, c, 4h, 4w).
-        """
-
         outputs = []
         num_outputs = len(feats['spatial'])
 
@@ -197,16 +174,6 @@ class AverNet(nn.Module):
         return torch.stack(outputs, dim=1)
 
     def forward(self, lqs):
-        """Forward function for BasicVSR++.
-
-        Args:
-            lqs (tensor): Input low quality (LQ) sequence with
-                shape (n, t, c, h, w).
-
-        Returns:
-            Tensor: Output HR sequence with shape (n, t, c, 4h, 4w).
-        """
-
         n, t, c, h, w = lqs.size()
 
         # whether to cache the features in CPU (no effect if using CPU)
@@ -327,22 +294,6 @@ class AverNet(nn.Module):
 
 # Prompt guided alignment
 class PromptGuidedAlignment(ModulatedDeformConv2d):
-    """Second-order deformable alignment module.
-
-    Args:
-        in_channels (int): Same as nn.Conv2d.
-        out_channels (int): Same as nn.Conv2d.
-        kernel_size (int or tuple[int]): Same as nn.Conv2d.
-        stride (int or tuple[int]): Same as nn.Conv2d.
-        padding (int or tuple[int]): Same as nn.Conv2d.
-        dilation (int or tuple[int]): Same as nn.Conv2d.
-        groups (int): Same as nn.Conv2d.
-        bias (bool or str): If specified as `auto`, it will be decided by the
-            norm_cfg. Bias will be set as True if norm_cfg is None, otherwise
-            False.
-        max_residue_magnitude (int): The maximum magnitude of the offset
-            residue (Eq. 6 in paper). Default: 10.
-    """
 
     def __init__(self, *args, **kwargs):
         self.max_residue_magnitude = kwargs.pop('max_residue_magnitude', 10)
